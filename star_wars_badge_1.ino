@@ -18,13 +18,21 @@
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_ST7789.h> // Hardware-specific library for ST7789
 #include <SPI.h>
-#include "aurebesh_16.h"
+
+#include "aurebesh_10.h"  // Aurebesh10pt7b
+#include "aurebesh_12.h"  // Aurebesh12pt7b
+#include "aurebesh_16.h"  // Aurebesh16pt7b
+#include "aurebesh_b16.h"  // Aurebesh_Bold16pt7b
+#include "aurebesh_b24.h"  // Aurebesh_Bold24pt7b
 
 // Use dedicated hardware SPI pins
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 
 float p = 3.1415926;
 
+char * chyron_text = "I have a bad feeling about this.";
+GFXcanvas1 chyron_canvas(256, 65);  // width, height, allegedly.
+int16_t chyron_position = 0;
 
 void setup(void) {
   Serial.begin(9600);
@@ -40,21 +48,21 @@ void setup(void) {
   delay(10);
 
   // initialize TFT
-  tft.init(135, 240); // Init ST7789 240x135
+  tft.init(135, 240); // w, h -- but rotated. Init ST7789 240x135
   tft.setRotation(3);
-  tft.fillScreen(ST77XX_BLACK);
+  tft.fillScreen(ST77XX_GREEN);
 
   Serial.println(F("Initialized"));
 
-  uint16_t time = millis();
-  tft.fillScreen(ST77XX_BLACK);
-  time = millis() - time;
+  // Plan: we have 135 vertical lines.
+  // * top half of screen is for graphics  (70 pixels)
+  // * bottom half of screen is a continuously scrolling chyron (65 pixels).
+  // 
+  // Chyron: chyron text is in 
 
-  Serial.println(time, DEC);
-  delay(500);
-
-  // large block of text
-  tft.fillScreen(ST77XX_BLACK);
+  tft.fillScreen(ST77XX_BLUE);
+  
+  /*
   testdrawtext(
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur "
       "adipiscing ante sed nibh tincidunt feugiat. Maecenas enim massa, "
@@ -63,21 +71,41 @@ void setup(void) {
       "ultrices massa eu hendrerit. Ut sed nisi lorem. In vestibulum purus a "
       "tortor imperdiet posuere. ",
       ST77XX_GREEN);
-  delay(1000);
-
-  // tft print function!
-  //tftPrintTest();
-  delay(4000);
-
-  Serial.println("done");
+  */
+ 
+ 
+  tft.setCursor(100, 100);
+  tft.setFont(&Aurebesh16pt7b);
+  tft.setTextColor(ST77XX_WHITE);
+  tft.setTextWrap(true);
+  tft.print("XXX");
+  
   delay(1000);
 }
 
+char buffer[40];
+
 void loop() {
-  tft.invertDisplay(true);
-  delay(500);
-  tft.invertDisplay(false);
-  delay(500);
+  sprintf(buffer, "%d.%d", millis(), millis() & 0xFF);
+  tft.setCursor(10,30);
+  tft.fillRect(0, 0, tft.width(), 40, ST77XX_GREEN);
+  tft.setTextColor(ST77XX_WHITE);
+  tft.print(buffer);
+  update_chyron();
+  // delay(11);
+}
+
+void update_chyron() {
+  if (chyron_position == 0) redraw_chyron();
+  tft.drawBitmap(100-chyron_position, 70, chyron_canvas.getBuffer(), chyron_canvas.width(), chyron_canvas.height(), ST77XX_ORANGE, ST77XX_BLUE);
+  chyron_position = (chyron_position + 1) % 512;
+}
+
+void redraw_chyron() {
+  chyron_canvas.setCursor(0, 0);
+  chyron_canvas.setFont(&Aurebesh12pt7b);
+  chyron_canvas.setTextWrap(false);
+  chyron_canvas.print(chyron_text);
 }
 
 void testlines(uint16_t color) {
