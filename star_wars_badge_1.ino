@@ -83,16 +83,31 @@ void setup(void) {
   delay(1000);
 }
 
+unsigned long count = 0;
+unsigned long now;
 char buffer[40];
 
+int32_t hash(unsigned long i) {
+  // this has is very bogus.
+  int32_t _hash = i;
+  _hash ^= _hash << 13;
+  _hash += 0x89348931;
+  _hash ^= _hash >> 4;
+  _hash += _hash >> 7;
+  return _hash;
+}
+
 void loop() {
-  sprintf(buffer, "%d.%d", millis(), millis() & 0xFF);
+  now = millis();
+  count++;
+
+  sprintf(buffer, "%d.%d", now, now & 0xFF);
   tft.setCursor(10,30);
   tft.fillRect(0, 0, tft.width(), 40, ST77XX_GREEN);
-  tft.setTextColor(ST77XX_WHITE);
+  tft.setTextColor(0x8410 + (hash(now >> 12)) & 0x7bef);
   tft.print(buffer);
-  update_chyron();
-  // delay(11);
+  // update_chyron();
+  delay(30);
 }
 
 void update_chyron() {
